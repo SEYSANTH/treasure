@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Treasure Chest</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background: radial-gradient(circle at center, rgba(45, 47, 51, 0.8), rgba(10, 10, 13, 0.8)), 
+                    url('background.gif') no-repeat center center fixed;
+        background-size: cover;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        position: relative;
+    }
+
+    .chest-container {
+        position: relative;
+        width: 250px;
+        height: 200px;
+        cursor: pointer;
+        perspective: 1000px;
+        z-index: 2;
+        animation: chestFloat 3s ease-in-out infinite; /* Floating effect */
+        transition: transform 0.3s ease; /* Smooth scaling on hover */
+    }
+
+    .chest-container:hover {
+        transform: scale(1.05); /* Slight scale effect on hover */
+    }
+
+    .chest-base {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 60%;
+        background: linear-gradient(135deg, #6d4c41, #4e342e);
+        border: 4px solid #3e2723;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 8px 10px rgba(0, 0, 0, 0.8);
+        z-index: 1;
+    }
+
+    .chest-lid {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        height: 40%;
+        background: linear-gradient(45deg, #8d6e63, #5d4037);
+        border: 4px solid #3e2723;
+        border-radius: 10px 10px 0 0;
+        transform-origin: bottom;
+        transition: transform 0.8s ease; /* Smooth lid opening */
+        box-shadow: 0 8px 8px rgba(0, 0, 0, 0.6);
+    }
+
+    .chest-latch {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 30px;
+        height: 10px;
+        background: #ffd54f;
+        border: 2px solid #fbc02d;
+        border-radius: 4px;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        z-index: 2;
+    }
+
+    .light-rays {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 150vw;
+        height: 150vh;
+        transform: translate(-50%, -50%) scale(0);
+        background: radial-gradient(circle at center, rgba(255, 223, 0, 0.2), transparent 70%);
+        border-radius: 50%;
+        animation: lightRays 1.5s forwards ease;
+        opacity: 0;
+        z-index: 1;
+    }
+
+    .winner-message {
+        position: fixed;
+        bottom: 50%; /* Adjusted to make it more visible */
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.8);
+        font-size: 3em;
+        color: #ffd700;
+        font-weight: bold;
+        text-shadow: 0px 0px 10px rgba(255, 223, 0, 1), 0px 0px 20px rgba(255, 215, 0, 1);
+        opacity: 0; /* Initially hidden */
+        transition: opacity 0.8s, transform 0.5s;
+        z-index: 3;
+    }
+
+    .chest-container.open .chest-lid {
+        transform: rotateX(-120deg); /* Open lid animation */
+    }
+
+    .chest-container.open ~ .light-rays {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .chest-container.open ~ .winner-message {
+        opacity: 1; /* Show the message */
+        transform: translate(-50%, -50%) scale(1.2); /* Pop out message */
+    }
+
+    @keyframes lightRays {
+        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+        50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
+    @keyframes chestFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    @media (max-width: 600px) {
+        .chest-container {
+            width: 150px;
+            height: 120px;
+        }
+
+        .winner-message {
+            font-size: 2em;
+        }
+
+        .light-rays {
+            width: 200vw;
+            height: 200vh;
+        }
+    }
+</style>
+</head>
+<body>
+
+<!-- Audio Element -->
+<audio id="treasureAudio" src="treasure.wav"></audio>
+
+<!-- Chest Structure -->
+<div class="chest-container" onclick="toggleChest()">
+    <div class="chest-lid"></div>
+    <div class="chest-base"></div>
+    <div class="chest-latch"></div>
+</div>
+<div class="light-rays"></div>
+<div class="winner-message">🎉 YOU'RE A WINNER! 🎉</div>
+
+<script>
+    function toggleChest() {
+        const chestContainer = document.querySelector('.chest-container');
+        
+        // Only proceed if the chest is not already open
+        if (!chestContainer.classList.contains('open')) {
+            fetch('chest_opening.php')
+                .then(response => {
+                    if (!response.ok) throw new Error("Network response was not ok");
+                    return response.json();
+                })
+                .then(data => {
+                    // Set the winner message
+                    const winnerMessageElement = document.querySelector('.winner-message');
+                    winnerMessageElement.innerText = data.message;
+                    chestContainer.classList.add('open');  // Open the chest
+                    
+                    // Play the audio
+                    const audio = document.getElementById('treasureAudio');
+                    audio.play();  // Play the audio sound
+
+                    // Show the message
+                    winnerMessageElement.style.opacity = "1"; // Ensure the message is visible
+                })
+                .catch(error => {
+                    console.error('Error fetching message:', error);
+                    alert("There was an error opening the chest. Please try again later.");
+                });
+        }
+    }
+</script>
+
+</body>
+</html>
